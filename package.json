@@ -18,9 +18,9 @@
   ],
   "dependencies": {
     "async": "1.2.x",
-    "request": "2.x",
     "underscore": "1.x",
-    "uuid": "^3.0.0"
+    "uuid": "^3.0.0",
+    "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {
     "should": "*",

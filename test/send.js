@@ -1,11 +1,12 @@
 
 var _ = require("underscore");
-var request = require("request");
 var qs = require("querystring");
 var uuid = require("uuid");
 var should = require("should");
 var sinon = require("sinon");
 var url = require("url");
+
+global.XMLHttpRequest = sinon.useFakeXMLHttpRequest();
 
 var ua = require("../lib/index.js");
 var utils = require("../lib/utils.js")
@@ -16,12 +17,17 @@ describe("ua", function () {
 
 	describe("#send", function () {
 		var post;
+		var postCallCount = 0;
 
 		beforeEach(function () {
-			post = sinon.stub(request, "post").callsArg(2);
+			post = sinon.useFakeXMLHttpRequest();
+			post.onCreate = function (xhr) {
+	          postCallCount++;
+	        };
 		});
 
 		afterEach(function () {
+			postCallCount = 0;
 			post.restore()
 		});
 
@@ -31,7 +37,7 @@ describe("ua", function () {
 
 			visitor.send(fn);
 
-			post.called.should.equal(false, "no request should have been sent")
+			postCallCount.should.equal(0, "no request should have been sent")
 			fn.calledOnce.should.equal(true, "callback should have been called once")
 			fn.thisValues[0].should.equal(visitor, "callback should be called in the context of the visitor instance");
 			fn.args[0].should.eql([null, 0], "no error, no requests");
@@ -47,13 +53,12 @@ describe("ua", function () {
 				fn.thisValues[0].should.equal(visitor, "callback should be called in the context of the visitor instance");
 				fn.args[0].should.eql([null, 1], "no error, 1 requests");
 
-				post.callCount.should.equal(paramSets.length, "each param set should have been POSTed");
+				postCallCount.should.equal(paramSets.length, "each param set should have been POSTed");
 
 				for (var i = 0; i < paramSets.length; i++) {
 					var params = paramSets[i];
-					var args = post.args[i];
 
-					var parsedUrl = url.parse(args[0]);
+					var parsedUrl = url.parse(post.url);
 
 					Math.random(); // I have absolutely no idea why it fails unless there was some processing to be done after url.parse…
 
@@ -98,9 +103,8 @@ describe("ua", function () {
 
 				var fn = sinon.spy(function () {
 					fn.args[0].should.eql([null, 1], "no error, 1 requests");
-					var args = post.args[0];
 
-					var parsedUrl = url.parse(args[0]);
+					var parsedUrl = url.parse(post.url);
 
 					parsedUrl.pathname.should.eql(config.path);
 					done();
@@ -120,9 +124,8 @@ describe("ua", function () {
 
 				var fn = sinon.spy(function () {
 					fn.args[0].should.eql([null, 1], "no error, 1 requests");
-					var args = post.args[0];
 
-					var parsedUrl = url.parse(args[0]);
+					var parsedUrl = url.parse(post.url);
 
 					parsedUrl.pathname.should.eql(config.batchPath);
 					done();
@@ -196,16 +199,14 @@ describe("ua", function () {
 				fn.calledOnce.should.equal(true, "callback should have been called once");
 				fn.thisValues[0].should.equal(visitor, "callback should be called in the context of the visitor instance");
 
-				post.calledOnce.should.equal(true, "request should have been POSTed");
+				postCallCount.should.equal(1, "request should have been POSTed");
 
-				var parsedUrl = url.parse(post.args[0][0]);
-				var options = post.args[0][1];
+				var parsedUrl = url.parse(post.url);
 
 				(parsedUrl.protocol + "//" + parsedUrl.host).should.equal(config.hostname);
 
-				options.should.have.keys("headers","body")
-				options.headers.should.have.key("User-Agent");
-				options.headers["User-Agent"].should.equal("Test User Agent");
+				post.requestHeaders.should.have.key("User-Agent");
+				post.requestHeaders["User-Agent"].should.equal("Test User Agent");
 
 				done();
 			});
