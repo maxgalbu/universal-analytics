@@ -1,6 +1,6 @@
 {
   "name": "universal-analytics",
-  "version": "0.4.15",
+  "version": "0.4.16",
   "description": "A node module for Google's Universal Analytics tracking",
   "main": "index.js",
   "scripts": {
@@ -17,8 +17,6 @@
     "tracking"
   ],
   "dependencies": {
-    "async": "1.2.x",
-    "underscore": "1.x",
     "uuid": "^3.0.0",
     "xmlhttprequest": "^1.8.0"
   },
